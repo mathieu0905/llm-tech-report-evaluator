@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Skill working artifacts
+analysis/
+*.pdf
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
