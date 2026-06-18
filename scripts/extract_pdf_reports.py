@@ -114,7 +114,9 @@ def main() -> None:
     text_dir.mkdir(parents=True, exist_ok=True)
     img_dir.mkdir(parents=True, exist_ok=True)
 
-    pdfs = sorted(root.glob("*.pdf"))
+    # Recurse so run-dir layouts like targets/ and pool/ are covered, but never
+    # descend into the output dir (e.g. analysis/) to avoid re-processing artifacts.
+    pdfs = sorted(p for p in root.rglob("*.pdf") if out not in p.parents)
     summaries = []
     try:
         import fitz  # noqa: F401

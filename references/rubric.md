@@ -22,6 +22,29 @@ Use this protocol when the user asks for paper scoring, ranking, or review.
 4. Keep reviewers blind to each other's scores and rationales until after they submit.
 5. The main agent acts as area chair: reconcile disagreements, note uncertainty, and report the final score.
 6. If anonymous sub-agents cannot be spawned, simulate separate blind passes locally and disclose that limitation.
+7. Prefer pairwise comparisons before final numeric scores when papers are close. Models are usually more stable at judging "A is stronger than B on rigor" than inventing absolute numbers. Use numeric scores only after the pairwise ordering is coherent.
+8. Run a calibration pass before finalizing. Check public reviews, historical score drift, anchors, and pairwise-vs-absolute consistency. See `references/calibration.md`.
+
+## Optional SE Four-Point Reviewer Recommendations
+
+Use this only when the user explicitly asks for four-point PC simulation, individual reviewer recommendation scores, or a venue's exact four-point recommendation format. Do not use it by default: many papers collapse to the same recommendation pattern. Keep the 10-point Innovation / Paper Value / Rigor total as the primary scoring layer.
+
+Recommendation scale:
+
+- `4 = Accept`: clear accept; flaws are fixable and do not threaten the core contribution.
+- `3 = Weak Accept`: above the bar but with material risks; likely needs PC discussion.
+- `2 = Weak Reject`: below the bar or too risky, but has a credible contribution.
+- `1 = Reject`: clear reject; core novelty, evidence, or fit is not sufficient.
+
+If four-point scores are requested, report at least three independent complete reviewers:
+
+- `R1`: an independent reviewer who evaluates novelty, value, rigor, presentation, fit, and risk.
+- `R2`: another independent reviewer with the same full scope.
+- `R3`: another independent reviewer with the same full scope.
+
+Do not preassign reviewer personas such as "innovation reviewer", "strict-rigor reviewer", or "skeptical reviewer". Real PC reviewers may naturally emphasize different issues, but those differences should emerge from independent full-paper judgments rather than from a fixed role design.
+
+Use the 10-point Innovation/Value/Rigor scores as continuous calibration and show them when quality differences matter. Four-point recommendations can explain likely PC behavior, reviewer splits, and veto risks, but they should not replace the 10-point table. Typical mappings are only rough and often collapse quality differences.
 
 ## Dimensions
 
@@ -29,13 +52,19 @@ Use this protocol when the user asks for paper scoring, ranking, or review.
 
 Score whether the report proposes genuinely new architecture, training paradigm, RL algorithm, system design, data construction, evaluation method, or scientific framing. Reward ideas that solve explicit bottlenecks and are backed by ablations or analysis. Penalize simple scaling, benchmark chasing, or repackaging known techniques without new insight.
 
+Evidence required for high scores: name the specific new mechanism or framing, state which close comparison it improves on, and explain why the difference is not only scale or integration.
+
 ### Intrinsic Paper Value, 40%
 
 Score whether the report teaches transferable lessons beyond "this model is strong." Reward reusable principles, mechanisms, negative results, failure modes, counterintuitive findings, and clear recipes that can influence future research. Industrial deployment or business value is weak evidence only.
 
+Evidence required for high scores: identify the reusable lesson, recipe, benchmark artifact, mechanism, or negative result that another research group could apply.
+
 ### Rigor, 20%
 
 Score whether the report gives enough concrete support: training/data/post-training pipeline, infrastructure details, hyperparameters where useful, evaluation protocol, ablations, efficiency measurements, stability analysis, and limitations. Penalize opaque internal-only claims, narrow evaluations, missing setup details, or absent failure discussion.
+
+Evidence required for high scores: cite the evaluation protocol, meaningful baselines, ablations, limitations, and reproducibility-relevant details. Public reviewer criticism of experiments should trigger re-reading, not automatic downgrading.
 
 ### Aesthetics, reference only
 
@@ -58,17 +87,30 @@ Score readability and visual presentation: structure, figure/table clarity, typo
 - `C 能打`: credible and useful but less foundational or less novel.
 - `D 偏拉`: mostly capability report, vertical-domain integration, or limited paper insight.
 
+## Calibration Rules
+
+Use calibration to audit the score, not to outsource judgment.
+
+- **Review conflict**: if public reviews disagree with the model judgment, re-check the relevant paper evidence and either adjust or write a concrete disagreement rationale.
+- **Historical drift**: if a paper's new score differs from its prior mean by about 1.0 point or more, explain whether pool strength, paper type, missed evidence, or earlier over/under-estimation caused the change.
+- **Anchor mismatch**: if a paper is placed above a stronger topic anchor or below a weaker one, justify or adjust.
+- **Pairwise mismatch**: if pairwise judgments imply a different ordering from absolute scores, reconcile before finalizing.
+
+Record important calibration decisions in the evidence library when possible.
+
 ## Standard Output Table
 
 Use this table format:
 
-| Rank | Report | Innovation | Paper Value | Rigor | Aesthetics (ref) | Total |
-|---:|---|---:|---:|---:|---:|---:|
+| Rank | Report | Role | Type | Innovation | Paper Value | Rigor | Aesthetics (ref) | Total | Confidence | Calibration |
+|---:|---|---|---|---:|---:|---:|---:|---:|---|---|
 
 Then add short per-paper comments. For each paper mention:
 
 - primary contribution
 - why it scores where it does
+- which close comparison or anchor most influenced the score
+- whether public review or history changed the judgment
 - main limitation or reason it does not rank higher
 
 ## A4 Infographic Prompt Template
