@@ -217,6 +217,21 @@ def summarize_scores(rows: list[sqlite3.Row]) -> dict[str, dict[str, float | int
     return out
 
 
+def stability_state(item: dict[str, float | int | None]) -> str:
+    n = int(item["n"] or 0)
+    std = float(item["std"] or 0.0)
+    min_v = item["min"]
+    max_v = item["max"]
+    score_range = float(max_v) - float(min_v) if min_v is not None and max_v is not None else 0.0
+    if n >= 2 and std <= 0.35 and score_range <= 0.8:
+        return "locked"
+    if n >= 1 and std <= 0.60 and score_range <= 1.0:
+        return "provisional"
+    if n == 0:
+        return "fresh"
+    return "unstable"
+
+
 def summarize_reviews(rows: list[sqlite3.Row]) -> dict[str, Any]:
     ratings = numeric_values(rows, "rating")
     confidences = numeric_values(rows, "confidence")
@@ -551,6 +566,53 @@ def cmd_drift_check(args, conn, cache_dir):
         )
 
 
+def cmd_stability_report(args, conn, cache_dir):
+    paper_ids = split_ids(args.ids)
+    if not paper_ids:
+        sys.exit("Provide --ids with a comma-separated list or JSON list.")
+    dimensions = [args.dimension] if args.dimension else ["innovation", "value", "rigor", "aesthetics", "total"]
+    reports = []
+    for paper_id in paper_ids:
+        paper = conn.execute("SELECT * FROM papers WHERE id=?", (paper_id,)).fetchone()
+        rows = conn.execute("SELECT * FROM scores WHERE paper_id=? ORDER BY scored_date", (paper_id,)).fetchall()
+        summary = summarize_scores(rows)
+        dim_reports = {}
+        for dim in dimensions:
+            item = summary[dim]
+            dim_reports[dim] = {
+                **item,
+                "range": (
+                    round(float(item["max"]) - float(item["min"]), 3)
+                    if item["max"] is not None and item["min"] is not None
+                    else None
+                ),
+                "state": stability_state(item),
+            }
+        reports.append(
+            {
+                "paper_id": paper_id,
+                "title": paper["title"] if paper else "",
+                "venue": paper["venue"] if paper else "",
+                "dimensions": dim_reports,
+            }
+        )
+    if args.json:
+        print(json.dumps({"papers": reports}, ensure_ascii=False, indent=2))
+        return
+    print("Stability report")
+    print("State guide: locked = stable ruler, provisional = usable boundary, unstable = qualitative only, fresh = no history")
+    for report in reports:
+        title = f" | {report['title']}" if report["title"] else ""
+        venue = f" ({report['venue']})" if report["venue"] else ""
+        print(f"\n[{report['paper_id']}]{title}{venue}")
+        for dim, item in report["dimensions"].items():
+            print(
+                f"  {dim}: state={item['state']} n={item['n']} "
+                f"mean={item['mean']} std={item['std']} range={item['range']} "
+                f"min={item['min']} max={item['max']}"
+            )
+
+
 def cmd_record_review(args, conn, cache_dir):
     save_review(
         conn,
@@ -863,6 +925,11 @@ def build_parser():
     drift.add_argument("--std-multiplier", type=float, default=2.0)
     drift.add_argument("--json", action="store_true")
 
+    stable = sub.add_parser("stability-report")
+    stable.add_argument("--ids", required=True, help="Comma-separated ids or JSON list.")
+    stable.add_argument("--dimension", choices=["innovation", "value", "rigor", "aesthetics", "total"], default="")
+    stable.add_argument("--json", action="store_true")
+
     review = sub.add_parser("record-review")
     review.add_argument("--paper-id", required=True)
     review.add_argument("--source", default="manual")
@@ -944,6 +1011,7 @@ DISPATCH = {
     "record-score": cmd_record_score,
     "history": cmd_history,
     "drift-check": cmd_drift_check,
+    "stability-report": cmd_stability_report,
     "record-review": cmd_record_review,
     "reviews": cmd_reviews,
     "record-pairwise": cmd_record_pairwise,

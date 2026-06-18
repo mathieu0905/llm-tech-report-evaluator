@@ -89,6 +89,25 @@ Invalid explanations:
 Record meaningful drift decisions with `record-calibration`, using
 `historical_drift` as the trigger type.
 
+## Stability-Locked Anchor Calibration
+
+For repeated runs, do not treat every pool paper as a fresh competitor. Use
+`references/stability.md` to decide which papers are locked, provisional, or
+unstable anchors. Locked anchors should act as score bands and pairwise
+boundaries for the target paper.
+
+Run:
+
+```bash
+python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py stability-report \
+  --ids <id1,id2,id3>
+```
+
+If locked anchors change order because of a new target paper, assume the run is
+miscalibrated until proven otherwise. Re-read the close pair, inspect public
+reviews/history, and prefer target insertion between anchors over rewriting the
+anchor ranking.
+
 ## Anchor Calibration
 
 Maintain topic anchors when a topic has enough recurring papers:

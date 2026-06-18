@@ -19,6 +19,7 @@ Three rules make repeated use reliable:
 2. Never carry over rankings. Do not pull in, re-score, re-rank, or update papers from earlier runs unless the user explicitly asks to reuse or merge a previous run. If reusing material, confirm the exact directory and state what is being reused.
 3. Use history as calibration evidence only. Public reviews, historical scores, anchors, and prior pairwise judgments can reveal bias or drift, but every run still needs fresh reading, fresh comparison, and fresh scoring.
 4. In multi-target local-review mode, isolate target judgments. Other target papers from the same user request are not comparison baselines unless they are genuinely same-topic anchors and the user asks to compare them.
+5. Treat recurring comparison papers as calibration rulers, not disposable competitors. Their relative order and score bands should remain stable across runs unless fresh paper evidence, public reviews, or a documented anchor audit justifies movement.
 
 ## Multi-Target Local-Review Mode
 
@@ -122,7 +123,7 @@ Use this mode when the user supplies several papers as "targets", "submissions",
    - When subagent tooling is available, run multiple blind reviewers concurrently and point each reviewer only at `$RUN_DIR/analysis/text/` plus the rubric. Use available multi-agent tooling rather than leaking one reviewer's conclusions into another.
    - Recommended reviewer styles: `strict-rigor`, `innovation`, `transferable-value`, and `skeptical-meta`.
    - Give each reviewer the same fixed rubric. Let style affect scrutiny and evidence selection, not the scoring formula.
-- Ask reviewers to provide both dimension scores and pairwise comparisons for close papers. Store useful pairwise judgments as JSONL in `$RUN_DIR/judgments/pairwise_<dimension>.jsonl`.
+   - Ask reviewers to provide both dimension scores and pairwise comparisons for close papers. Store useful pairwise judgments as JSONL in `$RUN_DIR/judgments/pairwise_<dimension>.jsonl`.
    - For SE submission judgment, ask each reviewer pass for independent textual concerns and a confidence note. Do not ask for four-point recommendation scores unless explicitly requested. Reviewers should be independent complete reviewers rather than fixed personas. Each reviewer should evaluate the full paper, including novelty, value, rigor, presentation, fit, and risk; do not preassign one reviewer to be strict, positive, or skeptical.
    - The main Codex instance acts as area chair: collect reviews, reconcile large disagreements, and produce the final ranking with a short consensus/uncertainty note.
    - If subagents are unavailable, simulate separate blind review passes locally and explicitly disclose that real anonymous subagents were not used.
@@ -130,14 +131,16 @@ Use this mode when the user supplies several papers as "targets", "submissions",
 6. Score, compare, and calibrate with the fixed rubric.
    - Use `references/rubric.md` for dimension definitions, score anchors, tier labels, output format, calibration rules, and image-prompt templates.
    - Use `references/calibration.md` when public reviews, historical scores, anchors, or pairwise judgments are present.
+   - Use `references/stability.md` whenever a pool contains papers that appeared in earlier runs, the user complains about ranking drift, or the task is a repeated venue/submission judgment. In that mode, lock recurring pool papers to stable score bands and place the target by pairwise insertion instead of freely re-ranking the whole pool.
    - `Total = 0.40 * Innovation + 0.40 * Intrinsic Paper Value + 0.20 * Rigor`
    - Keep `Aesthetics` as a separate reference column only. Do not include it in total unless the user changes the rule.
    - Use one decimal place for dimension scores and two decimals for totals.
+   - For recurring anchors, report canonical or banded scores separately from current-run target scores. Do not let a new target's topic framing move unrelated anchors by more than the stability thresholds without an explicit drift note.
    - Aggregate pairwise JSONL when available:
      ```bash
      python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/pairwise_rank.py "$RUN_DIR/judgments/pairwise_innovation.jsonl" --markdown
      ```
-   - Before finalizing each paper, run `paper_db.py reviews <id>`, `paper_db.py history <id>`, and `paper_db.py drift-check <id> ...` when evidence exists. Record material score changes or justified disagreements with `record-calibration`.
+   - Before finalizing each recurring paper, run `paper_db.py reviews <id>`, `paper_db.py history <id>`, `paper_db.py drift-check <id> ...`, and when checking a group, `paper_db.py stability-report --ids <comma-separated-ids>`. Record material score changes or justified disagreements with `record-calibration`.
 
 7. Rank and explain.
    - Provide a table with rank, report/model, role, type, Innovation, Paper Value, Rigor, Aesthetics, Total, confidence, and calibration note. If the user's question is about submission outcome, keep the main table 10-point based and add likely AC read plus decisive risks. Include four-point recommendation scores only when explicitly requested.
@@ -161,6 +164,10 @@ Read `references/rubric.md` when scoring, ranking, tiering, or writing image-gen
 ### Calibration
 
 Read `references/calibration.md` when public reviews, historical scores, anchors, pairwise comparisons, or calibration notes are involved. It explains how to use review evidence and history without converting the library into a stale leaderboard.
+
+### Stability
+
+Read `references/stability.md` when repeated runs reuse comparison papers or when anchor ranking drift is a concern. It defines stable anchors, score bands, target insertion, drift thresholds, and the final report shape that keeps target judgment local without re-sorting the whole historical universe.
 
 ### PDF Extraction
 
@@ -192,6 +199,7 @@ python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py get <id> -
 python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py reviews <id>
 python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py history <id>
 python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py drift-check <id> --innovation <n> --value <n> --rigor <n> --aesthetics <n> --total <n>
+python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py stability-report --ids <id1,id2,...>
 python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py record-run ...
 python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py record-score ...
 ```

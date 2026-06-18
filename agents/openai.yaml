@@ -1,4 +1,4 @@
 interface:
   display_name: "LLM Tech Report Evaluator"
-  short_description: "Review-calibrated LLM paper ranking"
-  default_prompt: "Use $llm-tech-report-evaluator to compare, calibrate, and rank these research papers."
+  short_description: "Stable, review-calibrated paper scoring"
+  default_prompt: "Use $llm-tech-report-evaluator to compare, calibrate, and rank these research papers with stable anchors."
