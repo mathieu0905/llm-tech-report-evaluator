@@ -20,6 +20,7 @@ Three rules make repeated use reliable:
 3. Use history as calibration evidence only. Public reviews, historical scores, anchors, and prior pairwise judgments can reveal bias or drift, but every run still needs fresh reading, fresh comparison, and fresh scoring.
 4. In multi-target local-review mode, isolate target judgments. Other target papers from the same user request are not comparison baselines unless they are genuinely same-topic anchors and the user asks to compare them.
 5. Treat recurring comparison papers as calibration rulers, not disposable competitors. Their relative order and score bands should remain stable across runs unless fresh paper evidence, public reviews, or a documented anchor audit justifies movement.
+6. Separate **topic-nearest comparison papers** from **scale rulers**. A paper belongs in the primary comparison pool only when it is close on task, input/output contract, method family, evaluation object, or benchmark semantics. Broad famous papers such as general LLM-for-SE agent systems may be used as venue-bar scale rulers, but they must be labeled separately and must not dominate the target-local ranking or replace true same-topic neighbors.
 
 ## Multi-Target Local-Review Mode
 
@@ -28,12 +29,13 @@ Use this mode when the user supplies several papers as "targets", "submissions",
 - Start one coordinator run directory, then create one subdirectory per target such as `per_target/<target_id>/{target,pool,reviews,analysis,judgments}`.
 - Spawn one independent subagent per target when subagent tooling is available. Each subagent evaluates exactly one target paper, builds or verifies that target's local pool, and writes a target-local review. If subagents are unavailable, simulate one isolated pass per target and disclose that limitation.
 - Give each subagent only its target paper, the rubric, and its own local pool instructions. Do not give it the other target papers' scores or conclusions.
-- For each target, build a closest-topic pool with both sides of the venue threshold when available:
-  - accepted or published top-venue papers as positive anchors
-  - rejected, withdrawn, arXiv-only, secondary-track, workshop, or otherwise unaccepted/unverified papers as negative or boundary calibration controls
+- For each target, build a two-layer local pool:
+  - **Primary nearest-neighbor pool**: normally 4-6 papers that are genuinely same-task, same-mechanism, same benchmark family, or same evaluation object. Include accepted or published top-venue papers as positive anchors, plus rejected, withdrawn, arXiv-only, secondary-track, workshop, or otherwise unaccepted/unverified papers as boundary controls when they are topically close.
+  - **Scale-ruler set**: at most 2-3 broader accepted papers used only to calibrate the venue bar or stabilize historical score bands. Reused broad LLM-SE anchors across multiple targets are scale rulers by default unless the target's topic signature makes them truly same-topic.
 - Label each pool paper's status clearly: accepted main-track, accepted secondary-track, rejected, withdrawn, arXiv-only, unverified, or metadata-only. Use non-accepted papers for calibration, not as evidence that the target is weak by association.
-- Score the target and every paper in that target's local pool with the same rubric. The target-local report must include a calibration table with target, accepted anchors, and boundary controls all assigned Innovation, Paper Value, Rigor, Aesthetics, Total, confidence, and a short calibration note. For SE submission judgments, include independent reviewer-style textual concerns and an AC synthesis, but do not include four-point reviewer scores by default. Mark pool-paper scores as target-local calibration scores, not global or historical truth.
-- The coordinator reconciles scale after subagents finish: check review evidence, historical drift, pairwise consistency within each local pool, and only then create a cross-target summary matrix. The final report is organized by target paper, not by a global rank of all target papers.
+- Label each pool paper's **pool role** clearly: `target`, `primary-nearest`, `accepted-nearest-anchor`, `boundary-control`, or `scale-ruler`. Do not hide broad scale rulers inside the primary nearest-neighbor ranking.
+- Score the target, primary nearest-neighbor papers, boundary controls, and any scale rulers with the same rubric, but report scale rulers in a separate section or clearly separated rows. The target-local placement must be argued mainly against the primary nearest-neighbor pool. For SE submission judgments, include independent reviewer-style textual concerns and an AC synthesis, but do not include four-point reviewer scores by default. Mark pool-paper scores as target-local calibration scores, not global or historical truth.
+- The coordinator reconciles scale after subagents finish: check review evidence, historical drift, pairwise consistency within each local pool, and **run a pool-overlap audit** before creating the cross-target summary matrix. If the same broad paper appears in more than two target pools, demote it to scale-ruler unless a concrete same-topic reason is written. The final report is organized by target paper, not by a global rank of all target papers.
 
 ## Workflow
 
@@ -66,16 +68,17 @@ Use this mode when the user supplies several papers as "targets", "submissions",
      ```bash
      python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py link <id> "$RUN_DIR/pool"
      ```
-   - Use web/search/browser tools when the user has not supplied a complete pool or asks to find/gather related papers. Derive a topic signature from the target: title, problem statement, method family, task, and 3-8 keywords.
-   - Prefer same-topic comparability over broad fame. Aim for about 5-8 strong comparison papers unless the user asks for a different pool size.
+   - Use web/search/browser tools when the user has not supplied a complete pool or asks to find/gather related papers. Derive a topic signature from the target: title, problem statement, method family, task, input/output contract, evaluation object, benchmark semantics, and 3-8 keywords.
+   - Prefer same-topic comparability over broad fame. Before keeping a paper in the primary pool, run this nearest-neighbor test: it should match the target on at least two of task, input/output contract, method family, evaluation object, benchmark/dataset semantics, or failure mode. If it only shares "LLM agent", "software engineering", "benchmark", or venue prestige, label it as a scale ruler instead of a primary comparison.
+   - Aim for about 4-6 primary nearest-neighbor papers plus at most 2-3 scale rulers unless the user asks for a different pool size. If the primary pool is thin, say so and lower confidence rather than padding the primary pool with generic anchors.
    - Search across relevant top venues, not only the target paper's home field. Typical venues:
      - SE: ICSE, FSE/ESEC-FSE, ASE, ISSTA, TSE, TOSEM
      - ML/AI: NeurIPS, ICML, ICLR, AAAI, JMLR
      - NLP: ACL, EMNLP, NAACL, TACL
      - CV: CVPR, ICCV, ECCV, TPAMI
      - Security, systems, databases, and other fields: use the corresponding top venues
-   - Apply a hard default acceptance gate for ordinary comparison pools: keep only papers already accepted or published at a top venue. Exclude arXiv-only papers without confirmed venue unless the user explicitly wants them.
-   - In multi-target local-review mode, or whenever the user asks for rejected/unaccepted calibration, keep two labeled subsets instead of one pool: accepted top-venue anchors and non-accepted/secondary/unverified boundary controls.
+   - Apply a hard default acceptance gate for ordinary primary pools: keep accepted or published top-venue papers when enough same-topic papers exist. Exclude arXiv-only papers without confirmed venue unless the user explicitly wants them or they are close boundary controls needed for local calibration.
+   - In multi-target local-review mode, or whenever the user asks for rejected/unaccepted calibration, keep labeled subsets instead of one blended pool: primary accepted nearest-neighbor anchors, primary boundary controls, and scale rulers.
    - Prefer main/research-track papers. Label or down-rank secondary tracks such as workshops, industry/in-practice tracks, Findings, short papers, demos, and posters.
    - Prefer recent papers from the last roughly 18 months. Include older baselines only when they are essential or requested, and label them as older baselines.
    - For OpenReview-hosted venues, fetch public review evidence with the bundled harvester:
@@ -91,7 +94,7 @@ Use this mode when the user supplies several papers as "targets", "submissions",
      curl -L -o "$RUN_DIR/pool/<slug>.pdf" "https://arxiv.org/pdf/<arxiv-id>"
      ```
    - If no open PDF is available, record title, venue, year, abstract, and source URL. Either score from metadata with a lower-confidence note or ask the user for the PDF.
-   - Append each kept paper to `run.md` with title, venue, year, type, PDF or metadata-only status, and why it is comparable. Show this pool to the user before scoring when the pool was auto-discovered.
+   - Append each kept paper to `run.md` with title, venue, year, type, pool role, PDF or metadata-only status, and why it is comparable. Show this pool to the user before scoring when the pool was auto-discovered. If the pool contains recurring broad anchors, explicitly state that they are scale rulers, not nearest-neighbor evidence.
    - Add newly confirmed pool papers back to the evidence library:
      ```bash
      python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py add --id <id> --title "<title>" --pdf "$RUN_DIR/pool/<file>.pdf" --venue "<venue>" --year <year> --ptype "<type>" --accepted yes --keywords "<keywords>" --source-url "<url>"
@@ -135,7 +138,7 @@ Use this mode when the user supplies several papers as "targets", "submissions",
    - `Total = 0.40 * Innovation + 0.40 * Intrinsic Paper Value + 0.20 * Rigor`
    - Keep `Aesthetics` as a separate reference column only. Do not include it in total unless the user changes the rule.
    - Use one decimal place for dimension scores and two decimals for totals.
-   - For recurring anchors, report canonical or banded scores separately from current-run target scores. Do not let a new target's topic framing move unrelated anchors by more than the stability thresholds without an explicit drift note.
+   - For recurring anchors, report canonical or banded scores separately from current-run target scores. Do not let a new target's topic framing move unrelated anchors by more than the stability thresholds without an explicit drift note. Recurring broad anchors should usually appear as scale rulers, not as primary nearest-neighbor competitors.
    - Aggregate pairwise JSONL when available:
      ```bash
      python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/pairwise_rank.py "$RUN_DIR/judgments/pairwise_innovation.jsonl" --markdown
@@ -143,9 +146,9 @@ Use this mode when the user supplies several papers as "targets", "submissions",
    - Before finalizing each recurring paper, run `paper_db.py reviews <id>`, `paper_db.py history <id>`, `paper_db.py drift-check <id> ...`, and when checking a group, `paper_db.py stability-report --ids <comma-separated-ids>`. Record material score changes or justified disagreements with `record-calibration`.
 
 7. Rank and explain.
-   - Provide a table with rank, report/model, role, type, Innovation, Paper Value, Rigor, Aesthetics, Total, confidence, and calibration note. If the user's question is about submission outcome, keep the main table 10-point based and add likely AC read plus decisive risks. Include four-point recommendation scores only when explicitly requested.
+   - Provide a primary nearest-neighbor table with rank, report/model, pool role, type, Innovation, Paper Value, Rigor, Aesthetics, Total, confidence, and calibration note. If scale rulers are used, provide a separate scale-ruler table or clearly separated rows. If the user's question is about submission outcome, keep the main table 10-point based and add likely AC read plus decisive risks. Include four-point recommendation scores only when explicitly requested.
    - Mark the user's target paper rows so they stand out from the comparison pool.
-   - In multi-target local-review mode, organize the report by target paper. For each target, include its topic signature, accepted anchors, non-accepted/boundary controls, relative position, calibrated score, confidence, and likely review-style verdict. Include a target-local scoring table covering every pool paper and the target. Include a final cross-target summary matrix only as a coordinator calibration view, not as the main ranking.
+   - In multi-target local-review mode, organize the report by target paper. For each target, include its topic signature, primary nearest-neighbor anchors, non-accepted/boundary controls, scale rulers if used, relative position, calibrated score, confidence, and likely review-style verdict. Include target-local scoring tables that separate primary nearest-neighbor rows from scale rulers. Include a final cross-target summary matrix only as a coordinator calibration view, not as the main ranking, and include a short pool-overlap audit.
    - Add concise per-paper rationales grounded in concrete contributions, close comparisons, public review evidence when available, and any score-drift explanation.
    - Rank only this run's target and pool papers. If the user adds another paper mid-run, add it to this run's pool and re-rank within this run.
    - Save the final table and rationales to `$RUN_DIR/REPORT.md`.

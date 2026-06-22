@@ -98,12 +98,21 @@ Use calibration to audit the score, not to outsource judgment.
 
 Record important calibration decisions in the evidence library when possible.
 
-## Standard Output Table
+## Standard Output Tables
 
-Use this table format:
+When comparison papers are involved, separate the primary nearest-neighbor table from scale rulers. The primary table is the one used for target-local placement.
 
 | Rank | Report | Role | Type | Innovation | Paper Value | Rigor | Aesthetics (ref) | Total | Confidence | Calibration |
 |---:|---|---|---|---:|---:|---:|---:|---:|---|---|
+
+Use `Role` values such as `target`, `primary-nearest`, `accepted-nearest-anchor`, and `boundary-control`.
+
+If broad accepted papers are included only to calibrate the venue bar or stabilize score scale, put them in a separate table:
+
+| Report | Role | Type | Innovation | Paper Value | Rigor | Aesthetics (ref) | Total | Confidence | Scale-ruler use |
+|---|---|---|---:|---:|---:|---:|---:|---|---|
+
+Use `scale-ruler` as the role. Do not use scale-ruler rows as the main evidence that the target is above or below a truly same-topic paper.
 
 Then add short per-paper comments. For each paper mention:
 
