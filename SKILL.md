@@ -1,9 +1,9 @@
 ---
-name: llm-tech-report-evaluator
+name: paper-review-evaluator
 description: Evaluate, compare, calibrate, and rank research papers or LLM/foundation-model technical reports from PDFs, extracted text, or paper titles/topics. Use when Codex is asked to score papers on innovation/value/rigor, find related comparison papers, compare model technical reports, use public reviews for calibration, analyze historical score drift, create tier lists, or write image-generation prompts summarizing rankings.
 ---
 
-# LLM Tech Report Evaluator
+# Paper Review Evaluator
 
 ## Core Contract
 
@@ -62,11 +62,11 @@ Use this mode when the user supplies several papers as "targets", "submissions",
 2. Assemble the comparison pool, unless the user supplied a complete pool.
    - Check the local evidence library before web search:
      ```bash
-     python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py search "<target topic keywords>"
+     python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py search "<target topic keywords>"
      ```
    - For same-topic, accepted, cached-PDF hits, reuse them by linking:
      ```bash
-     python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py link <id> "$RUN_DIR/pool"
+     python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py link <id> "$RUN_DIR/pool"
      ```
    - Use web/search/browser tools when the user has not supplied a complete pool or asks to find/gather related papers. Derive a topic signature from the target: title, problem statement, method family, task, input/output contract, evaluation object, benchmark semantics, and 3-8 keywords.
    - Prefer same-topic comparability over broad fame. Before keeping a paper in the primary pool, run this nearest-neighbor test: it should match the target on at least two of task, input/output contract, method family, evaluation object, benchmark/dataset semantics, or failure mode. If it only shares "LLM agent", "software engineering", "benchmark", or venue prestige, label it as a scale ruler instead of a primary comparison.
@@ -83,7 +83,7 @@ Use this mode when the user supplies several papers as "targets", "submissions",
    - Prefer recent papers from the last roughly 18 months. Include older baselines only when they are essential or requested, and label them as older baselines.
    - For OpenReview-hosted venues, fetch public review evidence with the bundled harvester:
      ```bash
-     python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/openreview_reviews.py \
+     python3 ~/.codex/skills/paper-review-evaluator/scripts/openreview_reviews.py \
        --paper-id <paper_id> \
        --forum <openreview_forum_id> \
        --output "$RUN_DIR/reviews/<paper_id>.openreview.json"
@@ -97,7 +97,7 @@ Use this mode when the user supplies several papers as "targets", "submissions",
    - Append each kept paper to `run.md` with title, venue, year, type, pool role, PDF or metadata-only status, and why it is comparable. Show this pool to the user before scoring when the pool was auto-discovered. If the pool contains recurring broad anchors, explicitly state that they are scale rulers, not nearest-neighbor evidence.
    - Add newly confirmed pool papers back to the evidence library:
      ```bash
-     python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py add --id <id> --title "<title>" --pdf "$RUN_DIR/pool/<file>.pdf" --venue "<venue>" --year <year> --ptype "<type>" --accepted yes --keywords "<keywords>" --source-url "<url>"
+     python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py add --id <id> --title "<title>" --pdf "$RUN_DIR/pool/<file>.pdf" --venue "<venue>" --year <year> --ptype "<type>" --accepted yes --keywords "<keywords>" --source-url "<url>"
      ```
      The library is a material and calibration evidence store, not a ranking store. Scores are recomputed fresh for each run.
 
@@ -108,7 +108,7 @@ Use this mode when the user supplies several papers as "targets", "submissions",
      ```
    - Extract text with:
      ```bash
-     python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/extract_pdf_reports.py "$RUN_DIR"
+     python3 ~/.codex/skills/paper-review-evaluator/scripts/extract_pdf_reports.py "$RUN_DIR"
      ```
    - Outputs go under `$RUN_DIR/analysis/`:
      - `analysis/text/<pdf-stem>.txt`
@@ -141,7 +141,7 @@ Use this mode when the user supplies several papers as "targets", "submissions",
    - For recurring anchors, report canonical or banded scores separately from current-run target scores. Do not let a new target's topic framing move unrelated anchors by more than the stability thresholds without an explicit drift note. Recurring broad anchors should usually appear as scale rulers, not as primary nearest-neighbor competitors.
    - Aggregate pairwise JSONL when available:
      ```bash
-     python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/pairwise_rank.py "$RUN_DIR/judgments/pairwise_innovation.jsonl" --markdown
+     python3 ~/.codex/skills/paper-review-evaluator/scripts/pairwise_rank.py "$RUN_DIR/judgments/pairwise_innovation.jsonl" --markdown
      ```
    - Before finalizing each recurring paper, run `paper_db.py reviews <id>`, `paper_db.py history <id>`, `paper_db.py drift-check <id> ...`, and when checking a group, `paper_db.py stability-report --ids <comma-separated-ids>`. Record material score changes or justified disagreements with `record-calibration`.
 
@@ -177,7 +177,7 @@ Read `references/stability.md` when repeated runs reuse comparison papers or whe
 Run:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/extract_pdf_reports.py "$RUN_DIR"
+python3 ~/.codex/skills/paper-review-evaluator/scripts/extract_pdf_reports.py "$RUN_DIR"
 ```
 
 The extractor recurses through `targets/` and `pool/` while avoiding the output directory. It prefers PyMuPDF (`fitz`) and falls back to `pypdf`. If neither exists, install one with `pip install pymupdf` or `pip install pypdf`.
@@ -194,17 +194,17 @@ Use it to avoid re-downloading already-vetted comparison PDFs and to calibrate f
 Common commands:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py init
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py search "<keywords>"
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py link <id> "$RUN_DIR/pool"
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py add --id <id> --title "<title>" --pdf <path>
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py get <id> --with-evidence
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py reviews <id>
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py history <id>
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py drift-check <id> --innovation <n> --value <n> --rigor <n> --aesthetics <n> --total <n>
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py stability-report --ids <id1,id2,...>
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py record-run ...
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py record-score ...
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py init
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py search "<keywords>"
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py link <id> "$RUN_DIR/pool"
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py add --id <id> --title "<title>" --pdf <path>
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py get <id> --with-evidence
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py reviews <id>
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py history <id>
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py drift-check <id> --innovation <n> --value <n> --rigor <n> --aesthetics <n> --total <n>
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py stability-report --ids <id1,id2,...>
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py record-run ...
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py record-score ...
 ```
 
 Use `--cache-dir` for isolated testing.
@@ -214,7 +214,7 @@ Use `--cache-dir` for isolated testing.
 Use `scripts/openreview_reviews.py` for OpenReview-hosted venues:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/openreview_reviews.py --paper-id <id> --forum <forum_id>
+python3 ~/.codex/skills/paper-review-evaluator/scripts/openreview_reviews.py --paper-id <id> --forum <forum_id>
 ```
 
 It stores public review and decision evidence into the evidence library.

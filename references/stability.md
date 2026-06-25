@@ -81,7 +81,7 @@ Avoid presenting every run as a brand-new global ranking unless the user explici
 Check anchor stability:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py stability-report --ids <id1,id2,id3>
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py stability-report --ids <id1,id2,id3>
 ```
 
 Use `--dimension innovation`, `--dimension value`, or `--dimension rigor` when the drift concern is dimension-specific.
@@ -89,7 +89,7 @@ Use `--dimension innovation`, `--dimension value`, or `--dimension rigor` when t
 Record an anchor movement only when it is intentional:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py record-calibration \
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py record-calibration \
   --run-id <run_id> \
   --paper-id <paper_id> \
   --trigger-type historical_drift \

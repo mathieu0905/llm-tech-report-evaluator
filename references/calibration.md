@@ -25,7 +25,7 @@ calibration, drift checks, and audit notes.
 For OpenReview papers, fetch public reviews with:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/openreview_reviews.py \
+python3 ~/.codex/skills/paper-review-evaluator/scripts/openreview_reviews.py \
   --paper-id <paper_id> \
   --forum <openreview_forum_id>
 ```
@@ -33,7 +33,7 @@ python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/openreview_reviews.py 
 Then inspect:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py reviews <paper_id> --verbose
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py reviews <paper_id> --verbose
 ```
 
 Use reviews as calibration evidence:
@@ -50,7 +50,7 @@ Use reviews as calibration evidence:
 Record material conflicts:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py record-calibration \
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py record-calibration \
   --run-id <run_id> \
   --paper-id <paper_id> \
   --trigger-type review_conflict \
@@ -66,7 +66,7 @@ python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py record-cal
 Before finalizing a paper with prior scores, check drift:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py drift-check <paper_id> \
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py drift-check <paper_id> \
   --innovation <score> --value <score> --rigor <score> --aesthetics <score> --total <score>
 ```
 
@@ -99,7 +99,7 @@ boundaries for the target paper.
 Run:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py stability-report \
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py stability-report \
   --ids <id1,id2,id3>
 ```
 
@@ -113,7 +113,7 @@ anchor ranking.
 Maintain topic anchors when a topic has enough recurring papers:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py add-anchor \
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py add-anchor \
   --topic "LLM agent evaluation" \
   --paper-id <paper_id> \
   --tier A \
@@ -149,7 +149,7 @@ Record pairwise judgments in `judgments/pairwise_<dimension>.jsonl`:
 Aggregate with:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/pairwise_rank.py \
+python3 ~/.codex/skills/paper-review-evaluator/scripts/pairwise_rank.py \
   "$RUN_DIR/judgments/pairwise_innovation.jsonl" --markdown
 ```
 
@@ -178,6 +178,6 @@ Recommended final table columns:
 After finalizing, record the run and final scores:
 
 ```bash
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py record-run ...
-python3 ~/.codex/skills/llm-tech-report-evaluator/scripts/paper_db.py record-score ...
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py record-run ...
+python3 ~/.codex/skills/paper-review-evaluator/scripts/paper_db.py record-score ...
 ```

@@ -1,4 +1,4 @@
-# LLM Technical Report Evaluation Rubric
+# Paper Review Evaluation Rubric
 
 ## Scoring Formula
 

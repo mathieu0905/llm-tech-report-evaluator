@@ -26,7 +26,7 @@ import paper_db
 
 
 def fetch_json(url: str, timeout: int = 30) -> dict[str, Any]:
-    req = urllib.request.Request(url, headers={"User-Agent": "codex-llm-tech-report-evaluator/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "codex-paper-review-evaluator/1.0"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
